@@ -51,6 +51,12 @@ export default {
   async mounted() {
     await this.cargar()
   },
+  watch: {
+    // Vue Router reutiliza el componente al pasar de /consultas/1 a /consultas/2.
+    '$route.params.id'(id) {
+      if (id) this.cargar()
+    }
+  },
   methods: {
     formatFecha: formatFechaHora,
     async cargar() {
