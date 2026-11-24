@@ -46,7 +46,7 @@ public class ConsultasController : ControllerBase
             return BadRequest(new { mensaje = "No se puede agendar una consulta en una fecha pasada." });
 
         var afiliado = await _context.Afiliados.FindAsync(request.AfiliadoId);
-        if (afiliado == null)
+        if (afiliado == null || !afiliado.isActive)
             return NotFound(new { mensaje = "Afiliado no encontrado." });
 
         if (afiliado.Bloqueado)
