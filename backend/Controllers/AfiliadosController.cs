@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
 using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
+using ConsultasPlan.Servicios;
 
 namespace ConsultasPlan.Controllers;
 
@@ -11,10 +12,12 @@ namespace ConsultasPlan.Controllers;
 public class AfiliadosController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IReloj _reloj;
 
-    public AfiliadosController(AppDbContext context)
+    public AfiliadosController(AppDbContext context, IReloj reloj)
     {
         _context = context;
+        _reloj = reloj;
     }
 
     [HttpGet]
@@ -44,7 +47,7 @@ public class AfiliadosController : ControllerBase
             DNI = request.DNI,
             Email = request.Email.Trim(),
             Telefono = request.Telefono,
-            createdAt = DateTime.UtcNow,
+            createdAt = _reloj.Ahora,
             isActive = true
         };
         _context.Afiliados.Add(afiliado);
