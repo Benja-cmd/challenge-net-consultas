@@ -29,7 +29,12 @@
           <td>{{ consulta.motivo }}</td>
           <td>
             <router-link :to="`/consultas/${consulta.id}`">Ver</router-link>
-            <button class="btn-danger" style="margin-left: 8px" @click="cancelar(consulta.id)">Cancelar</button>
+            <button
+              v-if="puedeCancelarse(consulta)"
+              class="btn-danger"
+              style="margin-left: 8px"
+              @click="cancelar(consulta.id)"
+            >Cancelar</button>
           </td>
         </tr>
       </tbody>
@@ -60,6 +65,9 @@ export default {
   methods: {
     formatFecha(fecha) {
       return new Date(fecha).toLocaleString('es-AR')
+    },
+    puedeCancelarse(consulta) {
+      return ['Pendiente', 'Confirmado'].includes(consulta.estado) && new Date(consulta.fechaHora) > new Date()
     },
     async cancelar(id) {
       try {

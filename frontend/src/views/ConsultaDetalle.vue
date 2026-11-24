@@ -12,21 +12,17 @@
       <div class="detail-row"><span class="label">Estado</span><span>{{ consulta.estado }}</span></div>
       <div class="detail-row"><span class="label">Motivo</span><span>{{ consulta.motivo }}</span></div>
 
-      <div style="margin-top: 24px">
-        <div class="form-group">
-          <label>Cambiar estado</label>
-          <select v-model="nuevoEstado">
-            <option v-for="e in estados" :key="e" :value="e">{{ e }}</option>
-          </select>
-        </div>
-        <button @click="cambiarEstado" style="margin-bottom: 16px">Actualizar estado</button>
+      <div v-if="abierta" style="display: flex; gap: 10px; margin-top: 24px">
+        <template v-if="esFutura">
+          <button v-if="consulta.estado === 'Pendiente'" @click="confirmar">Confirmar consulta</button>
+          <button class="btn-danger" @click="cancelar">Cancelar consulta</button>
+        </template>
+        <template v-else>
+          <button @click="registrarAtencion">Registrar atención</button>
+          <button @click="marcarInasistencia">Marcar inasistencia</button>
+        </template>
       </div>
-
-      <div style="display: flex; gap: 10px">
-        <button @click="registrarAtencion">Registrar atención</button>
-        <button class="btn-danger" @click="cancelar">Cancelar consulta</button>
-        <button @click="marcarInasistencia">Marcar inasistencia</button>
-      </div>
+      <p v-else class="estado-final">La consulta está en un estado final y no admite cambios.</p>
     </div>
     <p v-else>Cargando...</p>
   </div>
@@ -40,9 +36,15 @@ export default {
   name: 'ConsultaDetalle',
   data() {
     return {
-      consulta: null,
-      nuevoEstado: 'Pendiente',
-      estados: ['Pendiente', 'Confirmado', 'Cancelado', 'Atendido', 'Inasistencia']
+      consulta: null
+    }
+  },
+  computed: {
+    abierta() {
+      return ['Pendiente', 'Confirmado'].includes(this.consulta?.estado)
+    },
+    esFutura() {
+      return new Date(this.consulta?.fechaHora) > new Date()
     }
   },
   async mounted() {
@@ -56,7 +58,6 @@ export default {
       try {
         const res = await consultasApi.getById(this.$route.params.id)
         this.consulta = res.data
-        this.nuevoEstado = this.consulta.estado
       } catch (error) {
         alert(mensajeDeError(error))
       }
@@ -71,8 +72,8 @@ export default {
         alert(mensajeDeError(error))
       }
     },
-    cambiarEstado() {
-      return this.ejecutar(id => consultasApi.actualizarEstado(id, { estado: this.nuevoEstado }))
+    confirmar() {
+      return this.ejecutar(id => consultasApi.actualizarEstado(id, { estado: 'Confirmado' }))
     },
     registrarAtencion() {
       return this.ejecutar(consultasApi.registrarAtencion)
@@ -93,6 +94,11 @@ export default {
   padding: 10px 0;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
+}
+.estado-final {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #666;
 }
 .label {
   width: 130px;
