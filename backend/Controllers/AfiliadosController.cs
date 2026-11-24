@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
 using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
+using ConsultasPlan.Reglas;
 using ConsultasPlan.Servicios;
 
 namespace ConsultasPlan.Controllers;
@@ -13,11 +14,13 @@ public class AfiliadosController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IReloj _reloj;
+    private readonly CupoNutricionServicio _cupoNutricion;
 
-    public AfiliadosController(AppDbContext context, IReloj reloj)
+    public AfiliadosController(AppDbContext context, IReloj reloj, CupoNutricionServicio cupoNutricion)
     {
         _context = context;
         _reloj = reloj;
+        _cupoNutricion = cupoNutricion;
     }
 
     [HttpGet]
@@ -33,6 +36,26 @@ public class AfiliadosController : ControllerBase
         var afiliado = await _context.Afiliados.FindAsync(id);
         if (afiliado == null) return NotFound();
         return Ok(afiliado);
+    }
+
+    /// <summary>Cupo de consultas presenciales de nutrición del afiliado. Por defecto, el año en curso.</summary>
+    [HttpGet("{id}/cupo-nutricion")]
+    public async Task<ActionResult<CupoNutricionResponse>> GetCupoNutricion(int id, [FromQuery] int? anio)
+    {
+        if (!await _context.Afiliados.AnyAsync(a => a.Id == id)) return NotFound();
+
+        var anioConsulta = anio ?? _reloj.Ahora.Year;
+        var consumidas = await _cupoNutricion.ConsultasQueConsumenCupoAsync(id, anioConsulta);
+
+        return new CupoNutricionResponse
+        {
+            Anio = anioConsulta,
+            LimiteAnual = CupoNutricion.LimiteAnual,
+            LimiteMensual = CupoNutricion.LimiteMensual,
+            Usadas = consumidas.Count,
+            Disponibles = Math.Max(0, CupoNutricion.LimiteAnual - consumidas.Count),
+            MesesUtilizados = consumidas.Select(c => c.FechaHora.Month).Distinct().Order().ToList()
+        };
     }
 
     [HttpPost]
