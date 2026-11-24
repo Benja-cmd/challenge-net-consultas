@@ -66,13 +66,16 @@ public class ConsultasController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = consulta.Id }, consulta);
     }
 
-    [HttpGet("cancelar/{id}")]
+    [HttpPost("{id}/cancelacion")]
     public async Task<IActionResult> CancelarConsulta(int id)
     {
         var consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
-        if (consulta.FechaHora - DateTime.Now < TimeSpan.FromHours(23))
+        if (consulta.Estado != EstadoConsulta.Pendiente && consulta.Estado != EstadoConsulta.Confirmado)
+            return BadRequest(new { mensaje = $"No se puede cancelar una consulta en estado {consulta.Estado}." });
+
+        if (consulta.FechaHora - DateTime.Now < TimeSpan.FromHours(24))
             return BadRequest(new { mensaje = "No se puede cancelar con menos de 24 horas de anticipación." });
 
         consulta.Estado = EstadoConsulta.Cancelado;
