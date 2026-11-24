@@ -46,40 +46,42 @@ export default {
     }
   },
   async mounted() {
-    try {
-      const res = await consultasApi.getById(this.$route.params.id)
-      this.consulta = res.data
-      this.nuevoEstado = this.consulta.estado
-    } catch (error) {
-      alert(mensajeDeError(error))
-    }
+    await this.cargar()
   },
   methods: {
     formatFecha(fecha) {
       return new Date(fecha).toLocaleString('es-AR')
     },
-    async cambiarEstado() {
+    async cargar() {
       try {
-        const res = await consultasApi.actualizarEstado(this.consulta.id, { estado: this.nuevoEstado })
-        this.consulta = res.data
-      } catch (error) {
-        alert(mensajeDeError(error))
-      }
-    },
-    async registrarAtencion() {
-      try {
-        const res = await consultasApi.registrarAtencion(this.consulta.id)
+        const res = await consultasApi.getById(this.$route.params.id)
         this.consulta = res.data
         this.nuevoEstado = this.consulta.estado
       } catch (error) {
         alert(mensajeDeError(error))
       }
     },
-    async cancelar() {
-      await consultasApi.cancelar(this.consulta.id)
+    // Ejecuta una acción sobre la consulta y vuelve a pedirla completa:
+    // las respuestas de las acciones no incluyen afiliado ni profesional.
+    async ejecutar(accion) {
+      try {
+        await accion(this.consulta.id)
+        await this.cargar()
+      } catch (error) {
+        alert(mensajeDeError(error))
+      }
     },
-    async marcarInasistencia() {
-      await consultasApi.marcarInasistencia(this.consulta.id)
+    cambiarEstado() {
+      return this.ejecutar(id => consultasApi.actualizarEstado(id, { estado: this.nuevoEstado }))
+    },
+    registrarAtencion() {
+      return this.ejecutar(consultasApi.registrarAtencion)
+    },
+    cancelar() {
+      return this.ejecutar(consultasApi.cancelar)
+    },
+    marcarInasistencia() {
+      return this.ejecutar(consultasApi.marcarInasistencia)
     }
   }
 }

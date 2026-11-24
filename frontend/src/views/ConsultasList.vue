@@ -62,7 +62,13 @@ export default {
       return new Date(fecha).toLocaleString('es-AR')
     },
     async cancelar(id) {
-      await consultasApi.cancelar(id)
+      try {
+        const res = await consultasApi.cancelar(id)
+        const consulta = this.consultas.find(c => c.id === id)
+        if (consulta) consulta.estado = res.data.estado
+      } catch (error) {
+        alert(mensajeDeError(error))
+      }
     }
   }
 }
