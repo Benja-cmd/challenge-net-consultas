@@ -35,11 +35,14 @@ public class AfiliadosController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] AfiliadoRequest request)
     {
+        if (await _context.Afiliados.AnyAsync(a => a.DNI == request.DNI))
+            return Conflict(new { mensaje = "Ya existe un afiliado con ese DNI." });
+
         var afiliado = new Afiliado
         {
-            NombreCompleto = request.NombreCompleto,
+            NombreCompleto = request.NombreCompleto.Trim(),
             DNI = request.DNI,
-            Email = request.Email,
+            Email = request.Email.Trim(),
             Telefono = request.Telefono,
             createdAt = DateTime.UtcNow,
             isActive = true
@@ -55,9 +58,12 @@ public class AfiliadosController : ControllerBase
         var existing = await _context.Afiliados.FindAsync(id);
         if (existing == null) return NotFound();
 
-        existing.NombreCompleto = request.NombreCompleto;
+        if (await _context.Afiliados.AnyAsync(a => a.DNI == request.DNI && a.Id != id))
+            return Conflict(new { mensaje = "Ya existe otro afiliado con ese DNI." });
+
+        existing.NombreCompleto = request.NombreCompleto.Trim();
         existing.DNI = request.DNI;
-        existing.Email = request.Email;
+        existing.Email = request.Email.Trim();
         existing.Telefono = request.Telefono;
 
         await _context.SaveChangesAsync();
