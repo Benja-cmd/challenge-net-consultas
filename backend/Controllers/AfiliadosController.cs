@@ -20,7 +20,7 @@ public class AfiliadosController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var afiliados = await _context.Afiliados.ToListAsync();
+        var afiliados = await _context.Afiliados.Where(a => a.isActive).ToListAsync();
         return Ok(afiliados);
     }
 
@@ -56,7 +56,7 @@ public class AfiliadosController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] AfiliadoRequest request)
     {
         var existing = await _context.Afiliados.FindAsync(id);
-        if (existing == null) return NotFound();
+        if (existing == null || !existing.isActive) return NotFound();
 
         if (await _context.Afiliados.AnyAsync(a => a.DNI == request.DNI && a.Id != id))
             return Conflict(new { mensaje = "Ya existe otro afiliado con ese DNI." });
@@ -74,9 +74,10 @@ public class AfiliadosController : ControllerBase
     public async Task<IActionResult> Delete(int id)
     {
         var afiliado = await _context.Afiliados.FindAsync(id);
-        if (afiliado == null) return NotFound();
+        if (afiliado == null || !afiliado.isActive) return NotFound();
 
-        _context.Afiliados.Remove(afiliado);
+        // Baja lógica: se conserva el registro para no perder el historial de consultas.
+        afiliado.isActive = false;
         await _context.SaveChangesAsync();
         return NoContent();
     }
