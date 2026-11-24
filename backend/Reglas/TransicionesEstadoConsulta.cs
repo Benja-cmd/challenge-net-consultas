@@ -15,8 +15,21 @@ public static class TransicionesEstadoConsulta
         EstadoConsulta.Cancelado    => ValidarCancelacion(consulta, ahora),
         EstadoConsulta.Inasistencia => ValidarInasistencia(consulta, ahora),
         EstadoConsulta.Atendido     => ValidarAtencion(consulta, ahora),
-        _                           => null
+        EstadoConsulta.Confirmado   => ValidarConfirmacion(consulta, ahora),
+        EstadoConsulta.Pendiente    => "Una consulta no puede volver al estado Pendiente.",
+        _                           => $"Estado inválido: {nuevoEstado}."
     };
+
+    public static string? ValidarConfirmacion(Consulta consulta, DateTime ahora)
+    {
+        if (consulta.Estado != EstadoConsulta.Pendiente)
+            return $"Solo se pueden confirmar consultas pendientes (estado actual: {consulta.Estado}).";
+
+        if (consulta.FechaHora <= ahora)
+            return "No se puede confirmar una consulta cuya fecha ya pasó.";
+
+        return null;
+    }
 
     /// <summary>Solo las consultas Pendientes o Confirmadas están "abiertas"; el resto son estados finales.</summary>
     public static bool EstaAbierta(Consulta consulta) =>

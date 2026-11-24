@@ -79,15 +79,8 @@ public class ConsultasController : ControllerBase
         CambiarEstado(id, EstadoConsulta.Atendido);
 
     [HttpPut("{id}/estado")]
-    public async Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoRequest request)
-    {
-        var consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        consulta.Estado = request.Estado;
-        await _context.SaveChangesAsync();
-        return Ok(consulta);
-    }
+    public Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoRequest request) =>
+        CambiarEstado(id, request.Estado);
 
     private async Task<IActionResult> CambiarEstado(int id, EstadoConsulta nuevoEstado)
     {
