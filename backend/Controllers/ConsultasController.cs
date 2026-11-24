@@ -42,6 +42,9 @@ public class ConsultasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CrearConsulta([FromBody] CrearConsultaRequest request)
     {
+        if (request.FechaHora <= DateTime.Now)
+            return BadRequest(new { mensaje = "No se puede agendar una consulta en una fecha pasada." });
+
         var afiliado = await _context.Afiliados.FindAsync(request.AfiliadoId);
         if (afiliado == null)
             return NotFound(new { mensaje = "Afiliado no encontrado." });
