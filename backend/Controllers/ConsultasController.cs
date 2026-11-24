@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
+using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
 using ConsultasPlan.Reglas;
 
@@ -39,28 +40,46 @@ public class ConsultasController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CrearConsulta([FromBody] Consulta consulta)
+    public async Task<IActionResult> CrearConsulta([FromBody] CrearConsultaRequest request)
     {
-        var afiliado = await _context.Afiliados.FindAsync(consulta.AfiliadoId);
+        if (request.FechaHora <= DateTime.Now)
+            return BadRequest(new { mensaje = "No se puede agendar una consulta en una fecha pasada." });
+
+        var afiliado = await _context.Afiliados.FindAsync(request.AfiliadoId);
         if (afiliado == null)
             return NotFound(new { mensaje = "Afiliado no encontrado." });
 
         if (afiliado.Bloqueado)
             return BadRequest(new { mensaje = "El afiliado se encuentra bloqueado para agendar consultas." });
 
-        var profesionalExiste = await _context.Profesionales.AnyAsync(p => p.Id == consulta.ProfesionalId);
+        var profesionalExiste = await _context.Profesionales.AnyAsync(p => p.Id == request.ProfesionalId);
         if (!profesionalExiste)
             return NotFound(new { mensaje = "Profesional no encontrado." });
 
         var consultaConflicto = await _context.Consultas.AnyAsync(c =>
-            c.ProfesionalId == consulta.ProfesionalId &&
-            c.FechaHora == consulta.FechaHora &&
+            c.ProfesionalId == request.ProfesionalId &&
+            c.FechaHora == request.FechaHora &&
             c.Estado != EstadoConsulta.Cancelado);
         if (consultaConflicto)
             return BadRequest(new { mensaje = "El profesional ya tiene una consulta en ese horario." });
 
-        consulta.FechaCreacion = DateTime.UtcNow;
-        consulta.Estado = EstadoConsulta.Pendiente;
+        var afiliadoConflicto = await _context.Consultas.AnyAsync(c =>
+            c.AfiliadoId == request.AfiliadoId &&
+            c.FechaHora == request.FechaHora &&
+            c.Estado != EstadoConsulta.Cancelado);
+        if (afiliadoConflicto)
+            return BadRequest(new { mensaje = "El afiliado ya tiene una consulta en ese horario." });
+
+        var consulta = new Consulta
+        {
+            AfiliadoId = request.AfiliadoId,
+            ProfesionalId = request.ProfesionalId,
+            FechaHora = request.FechaHora!.Value,
+            Modalidad = request.Modalidad!.Value,
+            Motivo = request.Motivo.Trim(),
+            FechaCreacion = DateTime.UtcNow,
+            Estado = EstadoConsulta.Pendiente
+        };
         _context.Consultas.Add(consulta);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = consulta.Id }, consulta);
