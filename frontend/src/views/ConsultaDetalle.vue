@@ -31,6 +31,7 @@
 <script>
 import { consultasApi } from '../services/api'
 import { mensajeDeError } from '../services/errores'
+import { formatFechaHora } from '../services/formato'
 
 export default {
   name: 'ConsultaDetalle',
@@ -51,9 +52,7 @@ export default {
     await this.cargar()
   },
   methods: {
-    formatFecha(fecha) {
-      return new Date(fecha).toLocaleString('es-AR')
-    },
+    formatFecha: formatFechaHora,
     async cargar() {
       try {
         const res = await consultasApi.getById(this.$route.params.id)

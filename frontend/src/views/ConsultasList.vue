@@ -46,6 +46,7 @@
 <script>
 import { consultasApi } from '../services/api'
 import { mensajeDeError } from '../services/errores'
+import { formatFechaHora } from '../services/formato'
 
 export default {
   name: 'ConsultasList',
@@ -63,9 +64,7 @@ export default {
     }
   },
   methods: {
-    formatFecha(fecha) {
-      return new Date(fecha).toLocaleString('es-AR')
-    },
+    formatFecha: formatFechaHora,
     puedeCancelarse(consulta) {
       return ['Pendiente', 'Confirmado'].includes(consulta.estado) && new Date(consulta.fechaHora) > new Date()
     },
