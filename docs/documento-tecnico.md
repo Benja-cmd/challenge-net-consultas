@@ -1,7 +1,7 @@
 # Challenge Técnico — Desarrollador .NET
 
-**Repositorio:** {{URL_REPOSITORIO}}
-**Rama de trabajo:** `dev-challenge-qa`
+- **Repositorio:** https://github.com/Benja-cmd/challenge-net-consultas
+- **Rama con la solución:** `dev-challenge-qa` (el código original recibido está en `main`)
 
 ---
 
@@ -37,7 +37,7 @@ Se agregó un proyecto de **tests xUnit (30 tests)** sobre las reglas de negocio
 | `bugfix/base-de-datos` | 3 | Migraciones, índice único, borrados en cascada |
 | `bugfix/frontend` | 9 | Errores, refresco de vistas, formato de hora, etc. |
 | `feature/cupo-nutricion` | 5 | Parte 2 + proyecto de tests |
-| `docs/actualizar-readme` | 2 | README y este documento |
+| `docs/actualizar-readme` | 3 | README y este documento |
 
 ## 3. Parte 1 — Problemas encontrados y cambios realizados
 
