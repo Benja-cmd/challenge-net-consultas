@@ -63,6 +63,13 @@ public class ConsultasController : ControllerBase
         if (consultaConflicto)
             return BadRequest(new { mensaje = "El profesional ya tiene una consulta en ese horario." });
 
+        var afiliadoConflicto = await _context.Consultas.AnyAsync(c =>
+            c.AfiliadoId == request.AfiliadoId &&
+            c.FechaHora == request.FechaHora &&
+            c.Estado != EstadoConsulta.Cancelado);
+        if (afiliadoConflicto)
+            return BadRequest(new { mensaje = "El afiliado ya tiene una consulta en ese horario." });
+
         var consulta = new Consulta
         {
             AfiliadoId = request.AfiliadoId,
