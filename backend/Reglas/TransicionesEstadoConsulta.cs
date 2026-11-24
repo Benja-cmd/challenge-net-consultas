@@ -46,6 +46,12 @@ public static class TransicionesEstadoConsulta
 
     public static string? ValidarAtencion(Consulta consulta, DateTime ahora)
     {
+        if (!EstaAbierta(consulta))
+            return $"No se puede registrar la atención de una consulta en estado {consulta.Estado}.";
+
+        if (consulta.FechaHora > ahora)
+            return "No se puede registrar la atención de una consulta futura.";
+
         if (consulta.FechaHora.Year != ahora.Year)
             return "Solo se pueden registrar atenciones de consultas del año en curso.";
 
