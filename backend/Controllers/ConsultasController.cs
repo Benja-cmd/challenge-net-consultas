@@ -14,11 +14,13 @@ public class ConsultasController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IReloj _reloj;
+    private readonly CupoNutricionServicio _cupoNutricion;
 
-    public ConsultasController(AppDbContext context, IReloj reloj)
+    public ConsultasController(AppDbContext context, IReloj reloj, CupoNutricionServicio cupoNutricion)
     {
         _context = context;
         _reloj = reloj;
+        _cupoNutricion = cupoNutricion;
     }
 
     [HttpGet]
@@ -56,8 +58,8 @@ public class ConsultasController : ControllerBase
         if (afiliado.Bloqueado)
             return BadRequest(new { mensaje = "El afiliado se encuentra bloqueado para agendar consultas." });
 
-        var profesionalExiste = await _context.Profesionales.AnyAsync(p => p.Id == request.ProfesionalId);
-        if (!profesionalExiste)
+        var profesional = await _context.Profesionales.FindAsync(request.ProfesionalId);
+        if (profesional == null)
             return NotFound(new { mensaje = "Profesional no encontrado." });
 
         var consultaConflicto = await _context.Consultas.AnyAsync(c =>
@@ -73,6 +75,10 @@ public class ConsultasController : ControllerBase
             c.Estado != EstadoConsulta.Cancelado);
         if (afiliadoConflicto)
             return BadRequest(new { mensaje = "El afiliado ya tiene una consulta en ese horario." });
+
+        var errorCupo = await _cupoNutricion.ValidarAsync(afiliado.Id, profesional, request.Modalidad!.Value, fechaHora);
+        if (errorCupo != null)
+            return BadRequest(new { mensaje = errorCupo });
 
         var consulta = new Consulta
         {
