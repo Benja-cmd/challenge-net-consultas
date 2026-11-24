@@ -34,6 +34,7 @@
 
 <script>
 import { consultasApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
 
 export default {
   name: 'ConsultaDetalle',
@@ -49,8 +50,8 @@ export default {
       const res = await consultasApi.getById(this.$route.params.id)
       this.consulta = res.data
       this.nuevoEstado = this.consulta.estado
-    } catch {
-      alert('Error al procesar la solicitud')
+    } catch (error) {
+      alert(mensajeDeError(error))
     }
   },
   methods: {
@@ -61,8 +62,8 @@ export default {
       try {
         const res = await consultasApi.actualizarEstado(this.consulta.id, { estado: this.nuevoEstado })
         this.consulta = res.data
-      } catch {
-        alert('Error al procesar la solicitud')
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     },
     async registrarAtencion() {
@@ -70,8 +71,8 @@ export default {
         const res = await consultasApi.registrarAtencion(this.consulta.id)
         this.consulta = res.data
         this.nuevoEstado = this.consulta.estado
-      } catch {
-        alert('Error al procesar la solicitud')
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     },
     async cancelar() {

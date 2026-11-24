@@ -40,6 +40,7 @@
 
 <script>
 import { consultasApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
 
 export default {
   name: 'ConsultasList',
@@ -52,8 +53,8 @@ export default {
     try {
       const res = await consultasApi.getAll()
       this.consultas = res.data
-    } catch {
-      alert('Error al procesar la solicitud')
+    } catch (error) {
+      alert(mensajeDeError(error))
     }
   },
   methods: {

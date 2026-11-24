@@ -40,6 +40,7 @@
 
 <script>
 import { afiliadosApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
 
 export default {
   name: 'AfiliadosList',
@@ -52,8 +53,8 @@ export default {
     try {
       const res = await afiliadosApi.getAll()
       this.afiliados = res.data
-    } catch {
-      alert('Error al procesar la solicitud')
+    } catch (error) {
+      alert(mensajeDeError(error))
     }
   },
   methods: {
@@ -61,8 +62,8 @@ export default {
       try {
         await afiliadosApi.delete(id)
         this.afiliados = this.afiliados.filter(a => a.id !== id)
-      } catch {
-        alert('Error al procesar la solicitud')
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     }
   }
