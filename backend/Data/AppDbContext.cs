@@ -14,6 +14,10 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Afiliado>()
+            .HasIndex(a => a.DNI)
+            .IsUnique();
+
         modelBuilder.Entity<Consulta>()
             .Property(c => c.Estado)
             .HasConversion<string>();

@@ -60,6 +60,9 @@ namespace ConsultasPlan.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DNI")
+                        .IsUnique();
+
                     b.ToTable("Afiliados");
                 });
 
