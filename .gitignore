@@ -16,3 +16,7 @@ Thumbs.db
 # Variables de entorno locales
 frontend/.env.local
 frontend/.env.*.local
+
+# Tests
+tests/**/bin/
+tests/**/obj/
