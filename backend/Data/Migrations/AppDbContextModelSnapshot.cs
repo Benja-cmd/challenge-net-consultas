@@ -153,12 +153,12 @@ namespace ConsultasPlan.Data.Migrations
                     b.HasOne("ConsultasPlan.Models.Afiliado", "Afiliado")
                         .WithMany()
                         .HasForeignKey("AfiliadoId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ConsultasPlan.Models.Profesional", "Profesional")
                         .WithMany()
                         .HasForeignKey("ProfesionalId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Afiliado");
@@ -171,7 +171,7 @@ namespace ConsultasPlan.Data.Migrations
                     b.HasOne("ConsultasPlan.Models.Sede", "Sede")
                         .WithMany()
                         .HasForeignKey("SedeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Sede");

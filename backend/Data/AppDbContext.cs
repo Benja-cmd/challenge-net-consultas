@@ -30,6 +30,20 @@ public class AppDbContext : DbContext
             .HasOne(c => c.Afiliado)
             .WithMany()
             .HasForeignKey(c => c.AfiliadoId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Ninguna baja debe arrastrar historia clínica: se impide borrar sedes con
+        // profesionales o profesionales con consultas.
+        modelBuilder.Entity<Consulta>()
+            .HasOne(c => c.Profesional)
+            .WithMany()
+            .HasForeignKey(c => c.ProfesionalId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Profesional>()
+            .HasOne(p => p.Sede)
+            .WithMany()
+            .HasForeignKey(p => p.SedeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
