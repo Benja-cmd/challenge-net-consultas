@@ -64,9 +64,9 @@ public class ConsultasController : ControllerBase
         {
             AfiliadoId = request.AfiliadoId,
             ProfesionalId = request.ProfesionalId,
-            FechaHora = request.FechaHora,
-            Modalidad = request.Modalidad,
-            Motivo = request.Motivo,
+            FechaHora = request.FechaHora!.Value,
+            Modalidad = request.Modalidad!.Value,
+            Motivo = request.Motivo.Trim(),
             FechaCreacion = DateTime.UtcNow,
             Estado = EstadoConsulta.Pendiente
         };
