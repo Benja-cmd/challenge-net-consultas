@@ -18,9 +18,13 @@ public static class TransicionesEstadoConsulta
         _                           => null
     };
 
+    /// <summary>Solo las consultas Pendientes o Confirmadas están "abiertas"; el resto son estados finales.</summary>
+    public static bool EstaAbierta(Consulta consulta) =>
+        consulta.Estado is EstadoConsulta.Pendiente or EstadoConsulta.Confirmado;
+
     public static string? ValidarCancelacion(Consulta consulta, DateTime ahora)
     {
-        if (consulta.Estado != EstadoConsulta.Pendiente && consulta.Estado != EstadoConsulta.Confirmado)
+        if (!EstaAbierta(consulta))
             return $"No se puede cancelar una consulta en estado {consulta.Estado}.";
 
         if (consulta.FechaHora - ahora < AnticipacionMinimaCancelacion)
@@ -31,6 +35,9 @@ public static class TransicionesEstadoConsulta
 
     public static string? ValidarInasistencia(Consulta consulta, DateTime ahora)
     {
+        if (!EstaAbierta(consulta))
+            return $"No se puede registrar una inasistencia sobre una consulta en estado {consulta.Estado}.";
+
         if (consulta.FechaHora > ahora)
             return "No se puede registrar una inasistencia sobre una consulta futura.";
 
