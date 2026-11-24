@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
-using ConsultasPlan.Helpers;
 using ConsultasPlan.Models;
+using ConsultasPlan.Reglas;
 
 namespace ConsultasPlan.Controllers;
 
@@ -67,57 +67,31 @@ public class ConsultasController : ControllerBase
     }
 
     [HttpPost("{id}/cancelacion")]
-    public async Task<IActionResult> CancelarConsulta(int id)
-    {
-        var consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        if (consulta.Estado != EstadoConsulta.Pendiente && consulta.Estado != EstadoConsulta.Confirmado)
-            return BadRequest(new { mensaje = $"No se puede cancelar una consulta en estado {consulta.Estado}." });
-
-        if (consulta.FechaHora - DateTime.Now < TimeSpan.FromHours(24))
-            return BadRequest(new { mensaje = "No se puede cancelar con menos de 24 horas de anticipación." });
-
-        consulta.Estado = EstadoConsulta.Cancelado;
-        await _context.SaveChangesAsync();
-        return Ok(consulta);
-    }
+    public Task<IActionResult> CancelarConsulta(int id) =>
+        CambiarEstado(id, EstadoConsulta.Cancelado);
 
     [HttpPost("{id}/inasistencia")]
-    public async Task<IActionResult> MarcarInasistencia(int id)
-    {
-        var consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        if (consulta.FechaHora > DateTime.Now)
-            return BadRequest(new { mensaje = "No se puede registrar una inasistencia sobre una consulta futura." });
-
-        consulta.Estado = EstadoConsulta.Inasistencia;
-        await _context.SaveChangesAsync();
-        return Ok(consulta);
-    }
+    public Task<IActionResult> MarcarInasistencia(int id) =>
+        CambiarEstado(id, EstadoConsulta.Inasistencia);
 
     [HttpPost("{id}/atencion")]
-    public async Task<IActionResult> RegistrarAtencion(int id)
-    {
-        var consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null) return NotFound();
-
-        if (!consulta.FechaHora.IsInCurrentYear())
-            return BadRequest(new { mensaje = "Solo se pueden registrar atenciones de consultas del año en curso." });
-
-        consulta.Estado = EstadoConsulta.Atendido;
-        await _context.SaveChangesAsync();
-        return Ok(consulta);
-    }
+    public Task<IActionResult> RegistrarAtencion(int id) =>
+        CambiarEstado(id, EstadoConsulta.Atendido);
 
     [HttpPut("{id}/estado")]
-    public async Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoRequest request)
+    public Task<IActionResult> ActualizarEstado(int id, [FromBody] ActualizarEstadoRequest request) =>
+        CambiarEstado(id, request.Estado);
+
+    private async Task<IActionResult> CambiarEstado(int id, EstadoConsulta nuevoEstado)
     {
         var consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
-        consulta.Estado = request.Estado;
+        var error = TransicionesEstadoConsulta.Validar(consulta, nuevoEstado, DateTime.Now);
+        if (error != null)
+            return BadRequest(new { mensaje = error });
+
+        consulta.Estado = nuevoEstado;
         await _context.SaveChangesAsync();
         return Ok(consulta);
     }
