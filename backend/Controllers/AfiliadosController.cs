@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
+using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
 
 namespace ConsultasPlan.Controllers;
@@ -32,25 +33,32 @@ public class AfiliadosController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Afiliado afiliado)
+    public async Task<IActionResult> Create([FromBody] AfiliadoRequest request)
     {
-        afiliado.createdAt = DateTime.UtcNow;
-        afiliado.isActive = true;
+        var afiliado = new Afiliado
+        {
+            NombreCompleto = request.NombreCompleto,
+            DNI = request.DNI,
+            Email = request.Email,
+            Telefono = request.Telefono,
+            createdAt = DateTime.UtcNow,
+            isActive = true
+        };
         _context.Afiliados.Add(afiliado);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = afiliado.Id }, afiliado);
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Afiliado afiliado)
+    public async Task<IActionResult> Update(int id, [FromBody] AfiliadoRequest request)
     {
         var existing = await _context.Afiliados.FindAsync(id);
         if (existing == null) return NotFound();
 
-        existing.NombreCompleto = afiliado.NombreCompleto;
-        existing.DNI = afiliado.DNI;
-        existing.Email = afiliado.Email;
-        existing.Telefono = afiliado.Telefono;
+        existing.NombreCompleto = request.NombreCompleto;
+        existing.DNI = request.DNI;
+        existing.Email = request.Email;
+        existing.Telefono = request.Telefono;
 
         await _context.SaveChangesAsync();
         return Ok(existing);
