@@ -4,11 +4,10 @@ namespace ConsultasPlan.Data;
 
 public static class DbSeeder
 {
-    public static void Seed(AppDbContext db)
+    public static void Seed(AppDbContext db, DateTime hoy)
     {
         if (db.Sedes.Any()) return;
 
-        var hoy = DateTime.Now;
         var y = hoy.Year;
 
         var sedes = new[]

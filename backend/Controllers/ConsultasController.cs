@@ -4,6 +4,7 @@ using ConsultasPlan.Data;
 using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
 using ConsultasPlan.Reglas;
+using ConsultasPlan.Servicios;
 
 namespace ConsultasPlan.Controllers;
 
@@ -12,10 +13,12 @@ namespace ConsultasPlan.Controllers;
 public class ConsultasController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly IReloj _reloj;
 
-    public ConsultasController(AppDbContext context)
+    public ConsultasController(AppDbContext context, IReloj reloj)
     {
         _context = context;
+        _reloj = reloj;
     }
 
     [HttpGet]
@@ -42,7 +45,8 @@ public class ConsultasController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CrearConsulta([FromBody] CrearConsultaRequest request)
     {
-        if (request.FechaHora <= DateTime.Now)
+        var fechaHora = _reloj.ALaZonaDelSistema(request.FechaHora!.Value);
+        if (fechaHora <= _reloj.Ahora)
             return BadRequest(new { mensaje = "No se puede agendar una consulta en una fecha pasada." });
 
         var afiliado = await _context.Afiliados.FindAsync(request.AfiliadoId);
@@ -58,14 +62,14 @@ public class ConsultasController : ControllerBase
 
         var consultaConflicto = await _context.Consultas.AnyAsync(c =>
             c.ProfesionalId == request.ProfesionalId &&
-            c.FechaHora == request.FechaHora &&
+            c.FechaHora == fechaHora &&
             c.Estado != EstadoConsulta.Cancelado);
         if (consultaConflicto)
             return BadRequest(new { mensaje = "El profesional ya tiene una consulta en ese horario." });
 
         var afiliadoConflicto = await _context.Consultas.AnyAsync(c =>
             c.AfiliadoId == request.AfiliadoId &&
-            c.FechaHora == request.FechaHora &&
+            c.FechaHora == fechaHora &&
             c.Estado != EstadoConsulta.Cancelado);
         if (afiliadoConflicto)
             return BadRequest(new { mensaje = "El afiliado ya tiene una consulta en ese horario." });
@@ -74,10 +78,10 @@ public class ConsultasController : ControllerBase
         {
             AfiliadoId = request.AfiliadoId,
             ProfesionalId = request.ProfesionalId,
-            FechaHora = request.FechaHora!.Value,
+            FechaHora = fechaHora,
             Modalidad = request.Modalidad!.Value,
             Motivo = request.Motivo.Trim(),
-            FechaCreacion = DateTime.UtcNow,
+            FechaCreacion = _reloj.Ahora,
             Estado = EstadoConsulta.Pendiente
         };
         _context.Consultas.Add(consulta);
@@ -106,7 +110,7 @@ public class ConsultasController : ControllerBase
         var consulta = await _context.Consultas.FindAsync(id);
         if (consulta == null) return NotFound();
 
-        var error = TransicionesEstadoConsulta.Validar(consulta, nuevoEstado, DateTime.Now);
+        var error = TransicionesEstadoConsulta.Validar(consulta, nuevoEstado, _reloj.Ahora);
         if (error != null)
             return BadRequest(new { mensaje = error });
 

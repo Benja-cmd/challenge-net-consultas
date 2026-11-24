@@ -1,7 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
+using ConsultasPlan.Servicios;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var zonaHoraria = TimeZoneInfo.FindSystemTimeZoneById(
+    builder.Configuration["ZonaHoraria"] ?? "America/Argentina/Buenos_Aires");
+builder.Services.AddSingleton<IReloj>(new Reloj(TimeProvider.System, zonaHoraria));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=consultas.db"));
@@ -33,7 +38,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
-    DbSeeder.Seed(db);
+    DbSeeder.Seed(db, scope.ServiceProvider.GetRequiredService<IReloj>().Ahora);
 }
 
 app.UseSwagger();
