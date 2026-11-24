@@ -29,7 +29,12 @@
           <td>{{ consulta.motivo }}</td>
           <td>
             <router-link :to="`/consultas/${consulta.id}`">Ver</router-link>
-            <button class="btn-danger" style="margin-left: 8px" @click="cancelar(consulta.id)">Cancelar</button>
+            <button
+              v-if="puedeCancelarse(consulta)"
+              class="btn-danger"
+              style="margin-left: 8px"
+              @click="cancelar(consulta.id)"
+            >Cancelar</button>
           </td>
         </tr>
       </tbody>
@@ -40,6 +45,8 @@
 
 <script>
 import { consultasApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
+import { formatFechaHora } from '../services/formato'
 
 export default {
   name: 'ConsultasList',
@@ -52,16 +59,23 @@ export default {
     try {
       const res = await consultasApi.getAll()
       this.consultas = res.data
-    } catch {
-      alert('Error al procesar la solicitud')
+    } catch (error) {
+      alert(mensajeDeError(error))
     }
   },
   methods: {
-    formatFecha(fecha) {
-      return new Date(fecha).toLocaleString('es-AR')
+    formatFecha: formatFechaHora,
+    puedeCancelarse(consulta) {
+      return ['Pendiente', 'Confirmado'].includes(consulta.estado) && new Date(consulta.fechaHora) > new Date()
     },
     async cancelar(id) {
-      await consultasApi.cancelar(id)
+      try {
+        const res = await consultasApi.cancelar(id)
+        const consulta = this.consultas.find(c => c.id === id)
+        if (consulta) consulta.estado = res.data.estado
+      } catch (error) {
+        alert(mensajeDeError(error))
+      }
     }
   }
 }

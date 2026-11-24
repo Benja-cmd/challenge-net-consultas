@@ -12,21 +12,17 @@
       <div class="detail-row"><span class="label">Estado</span><span>{{ consulta.estado }}</span></div>
       <div class="detail-row"><span class="label">Motivo</span><span>{{ consulta.motivo }}</span></div>
 
-      <div style="margin-top: 24px">
-        <div class="form-group">
-          <label>Cambiar estado</label>
-          <select v-model="nuevoEstado">
-            <option v-for="e in estados" :key="e" :value="e">{{ e }}</option>
-          </select>
-        </div>
-        <button @click="cambiarEstado" style="margin-bottom: 16px">Actualizar estado</button>
+      <div v-if="abierta" style="display: flex; gap: 10px; margin-top: 24px">
+        <template v-if="esFutura">
+          <button v-if="consulta.estado === 'Pendiente'" @click="confirmar">Confirmar consulta</button>
+          <button class="btn-danger" @click="cancelar">Cancelar consulta</button>
+        </template>
+        <template v-else>
+          <button @click="registrarAtencion">Registrar atención</button>
+          <button @click="marcarInasistencia">Marcar inasistencia</button>
+        </template>
       </div>
-
-      <div style="display: flex; gap: 10px">
-        <button @click="registrarAtencion">Registrar atención</button>
-        <button class="btn-danger" @click="cancelar">Cancelar consulta</button>
-        <button @click="marcarInasistencia">Marcar inasistencia</button>
-      </div>
+      <p v-else class="estado-final">La consulta está en un estado final y no admite cambios.</p>
     </div>
     <p v-else>Cargando...</p>
   </div>
@@ -34,51 +30,64 @@
 
 <script>
 import { consultasApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
+import { formatFechaHora } from '../services/formato'
 
 export default {
   name: 'ConsultaDetalle',
   data() {
     return {
-      consulta: null,
-      nuevoEstado: 'Pendiente',
-      estados: ['Pendiente', 'Confirmado', 'Cancelado', 'Atendido', 'Inasistencia']
+      consulta: null
+    }
+  },
+  computed: {
+    abierta() {
+      return ['Pendiente', 'Confirmado'].includes(this.consulta?.estado)
+    },
+    esFutura() {
+      return new Date(this.consulta?.fechaHora) > new Date()
     }
   },
   async mounted() {
-    try {
-      const res = await consultasApi.getById(this.$route.params.id)
-      this.consulta = res.data
-      this.nuevoEstado = this.consulta.estado
-    } catch {
-      alert('Error al procesar la solicitud')
+    await this.cargar()
+  },
+  watch: {
+    // Vue Router reutiliza el componente al pasar de /consultas/1 a /consultas/2.
+    '$route.params.id'(id) {
+      if (id) this.cargar()
     }
   },
   methods: {
-    formatFecha(fecha) {
-      return new Date(fecha).toLocaleString('es-AR')
-    },
-    async cambiarEstado() {
+    formatFecha: formatFechaHora,
+    async cargar() {
       try {
-        const res = await consultasApi.actualizarEstado(this.consulta.id, { estado: this.nuevoEstado })
+        const res = await consultasApi.getById(this.$route.params.id)
         this.consulta = res.data
-      } catch {
-        alert('Error al procesar la solicitud')
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     },
-    async registrarAtencion() {
+    // Ejecuta una acción sobre la consulta y vuelve a pedirla completa:
+    // las respuestas de las acciones no incluyen afiliado ni profesional.
+    async ejecutar(accion) {
       try {
-        const res = await consultasApi.registrarAtencion(this.consulta.id)
-        this.consulta = res.data
-        this.nuevoEstado = this.consulta.estado
-      } catch {
-        alert('Error al procesar la solicitud')
+        await accion(this.consulta.id)
+        await this.cargar()
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     },
-    async cancelar() {
-      await consultasApi.cancelar(this.consulta.id)
+    confirmar() {
+      return this.ejecutar(id => consultasApi.actualizarEstado(id, { estado: 'Confirmado' }))
     },
-    async marcarInasistencia() {
-      await consultasApi.marcarInasistencia(this.consulta.id)
+    registrarAtencion() {
+      return this.ejecutar(consultasApi.registrarAtencion)
+    },
+    cancelar() {
+      return this.ejecutar(consultasApi.cancelar)
+    },
+    marcarInasistencia() {
+      return this.ejecutar(consultasApi.marcarInasistencia)
     }
   }
 }
@@ -90,6 +99,11 @@ export default {
   padding: 10px 0;
   border-bottom: 1px solid #f0f0f0;
   font-size: 14px;
+}
+.estado-final {
+  margin-top: 24px;
+  font-size: 13px;
+  color: #666;
 }
 .label {
   width: 130px;

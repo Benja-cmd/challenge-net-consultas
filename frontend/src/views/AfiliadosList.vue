@@ -29,7 +29,7 @@
             <span v-else style="color: #388e3c">No</span>
           </td>
           <td>
-            <button class="btn-danger" @click="eliminar(a.id)">Eliminar</button>
+            <button class="btn-danger" @click="darDeBaja(a)">Dar de baja</button>
           </td>
         </tr>
       </tbody>
@@ -40,6 +40,7 @@
 
 <script>
 import { afiliadosApi } from '../services/api'
+import { mensajeDeError } from '../services/errores'
 
 export default {
   name: 'AfiliadosList',
@@ -52,17 +53,23 @@ export default {
     try {
       const res = await afiliadosApi.getAll()
       this.afiliados = res.data
-    } catch {
-      alert('Error al procesar la solicitud')
+    } catch (error) {
+      alert(mensajeDeError(error))
     }
   },
   methods: {
-    async eliminar(id) {
+    async darDeBaja(afiliado) {
+      const confirmado = confirm(
+        `¿Dar de baja a ${afiliado.nombreCompleto} (DNI ${afiliado.dni})?\n` +
+        'Dejará de aparecer en el listado y no podrá agendar consultas. Su historial se conserva.'
+      )
+      if (!confirmado) return
+
       try {
-        await afiliadosApi.delete(id)
-        this.afiliados = this.afiliados.filter(a => a.id !== id)
-      } catch {
-        alert('Error al procesar la solicitud')
+        await afiliadosApi.delete(afiliado.id)
+        this.afiliados = this.afiliados.filter(a => a.id !== afiliado.id)
+      } catch (error) {
+        alert(mensajeDeError(error))
       }
     }
   }
