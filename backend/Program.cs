@@ -8,7 +8,7 @@ var zonaHoraria = TimeZoneInfo.FindSystemTimeZoneById(
     builder.Configuration["ZonaHoraria"] ?? "America/Argentina/Buenos_Aires");
 builder.Services.AddSingleton<IReloj>(new Reloj(TimeProvider.System, zonaHoraria));
 
-builder.Services.AddScoped<CupoNutricionServicio>();
+builder.Services.AddScoped<CupoServicio>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=consultas.db"));

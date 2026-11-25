@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
 using ConsultasPlan.Dtos;
 using ConsultasPlan.Models;
-using ConsultasPlan.Reglas;
 using ConsultasPlan.Servicios;
 
 namespace ConsultasPlan.Controllers;
@@ -14,13 +13,13 @@ public class AfiliadosController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IReloj _reloj;
-    private readonly CupoNutricionServicio _cupoNutricion;
+    private readonly CupoServicio _cupo;
 
-    public AfiliadosController(AppDbContext context, IReloj reloj, CupoNutricionServicio cupoNutricion)
+    public AfiliadosController(AppDbContext context, IReloj reloj, CupoServicio cupo)
     {
         _context = context;
         _reloj = reloj;
-        _cupoNutricion = cupoNutricion;
+        _cupo = cupo;
     }
 
     [HttpGet]
@@ -38,24 +37,28 @@ public class AfiliadosController : ControllerBase
         return Ok(afiliado);
     }
 
-    /// <summary>Cupo de consultas presenciales de nutrición del afiliado. Por defecto, el año en curso.</summary>
-    [HttpGet("{id}/cupo-nutricion")]
-    public async Task<ActionResult<CupoNutricionResponse>> GetCupoNutricion(int id, [FromQuery] int? anio)
+    /// <summary>
+    /// Estado del cupo que aplicaría a una consulta del afiliado con ese profesional y modalidad
+    /// (según la política de su plan). Por defecto, el año en curso.
+    /// Devuelve 204 si esa combinación no está limitada por ningún cupo.
+    /// </summary>
+    [HttpGet("{id}/cupo")]
+    [ProducesResponseType(typeof(CupoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> GetCupo(int id, [FromQuery] int profesionalId,
+        [FromQuery] ModalidadConsulta? modalidad, [FromQuery] int? anio)
     {
-        if (!await _context.Afiliados.AnyAsync(a => a.Id == id)) return NotFound();
+        if (modalidad == null)
+            return BadRequest(new { mensaje = "Debe indicar la modalidad." });
 
-        var anioConsulta = anio ?? _reloj.Ahora.Year;
-        var consumidas = await _cupoNutricion.ConsultasQueConsumenCupoAsync(id, anioConsulta);
+        var afiliado = await _context.Afiliados.FindAsync(id);
+        if (afiliado == null) return NotFound(new { mensaje = "Afiliado no encontrado." });
 
-        return new CupoNutricionResponse
-        {
-            Anio = anioConsulta,
-            LimiteAnual = CupoNutricion.LimiteAnual,
-            LimiteMensual = CupoNutricion.LimiteMensual,
-            Usadas = consumidas.Count,
-            Disponibles = Math.Max(0, CupoNutricion.LimiteAnual - consumidas.Count),
-            MesesUtilizados = consumidas.Select(c => c.FechaHora.Month).Distinct().Order().ToList()
-        };
+        var profesional = await _context.Profesionales.FindAsync(profesionalId);
+        if (profesional == null) return NotFound(new { mensaje = "Profesional no encontrado." });
+
+        var cupo = await _cupo.ObtenerEstadoAsync(afiliado, profesional, modalidad.Value, anio ?? _reloj.Ahora.Year);
+        return cupo == null ? NoContent() : Ok(cupo);
     }
 
     [HttpPost]

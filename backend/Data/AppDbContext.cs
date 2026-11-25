@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
     public DbSet<Consulta> Consultas { get; set; }
     public DbSet<Profesional> Profesionales { get; set; }
     public DbSet<Sede> Sedes { get; set; }
+    public DbSet<PoliticaCupo> PoliticasCupo { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -45,5 +46,23 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.SedeId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        var politica = modelBuilder.Entity<PoliticaCupo>();
+        politica.ToTable("PoliticasCupo");
+        politica.Property(p => p.Modalidad).HasConversion<string>();
+        politica.HasIndex(p => new { p.Plan, p.Especialidad, p.Modalidad }).IsUnique();
+
+        // Política pedida en el challenge. Se carga por migración para que llegue también
+        // a bases ya existentes en producción.
+        politica.HasData(new PoliticaCupo
+        {
+            Id = 1,
+            Plan = "Plan Integral",
+            Especialidad = "Nutrición",
+            Modalidad = ModalidadConsulta.Presencial,
+            LimiteAnual = 6,
+            LimiteMensual = 1,
+            InasistenciaConsumeCupo = true
+        });
     }
 }

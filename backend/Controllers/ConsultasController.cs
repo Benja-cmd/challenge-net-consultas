@@ -14,13 +14,13 @@ public class ConsultasController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IReloj _reloj;
-    private readonly CupoNutricionServicio _cupoNutricion;
+    private readonly CupoServicio _cupo;
 
-    public ConsultasController(AppDbContext context, IReloj reloj, CupoNutricionServicio cupoNutricion)
+    public ConsultasController(AppDbContext context, IReloj reloj, CupoServicio cupo)
     {
         _context = context;
         _reloj = reloj;
-        _cupoNutricion = cupoNutricion;
+        _cupo = cupo;
     }
 
     [HttpGet]
@@ -76,7 +76,7 @@ public class ConsultasController : ControllerBase
         if (afiliadoConflicto)
             return BadRequest(new { mensaje = "El afiliado ya tiene una consulta en ese horario." });
 
-        var errorCupo = await _cupoNutricion.ValidarAsync(afiliado.Id, profesional, request.Modalidad!.Value, fechaHora);
+        var errorCupo = await _cupo.ValidarAsync(afiliado, profesional, request.Modalidad!.Value, fechaHora);
         if (errorCupo != null)
             return BadRequest(new { mensaje = errorCupo });
 

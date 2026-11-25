@@ -105,6 +105,53 @@ namespace ConsultasPlan.Data.Migrations
                     b.ToTable("Consultas");
                 });
 
+            modelBuilder.Entity("ConsultasPlan.Models.PoliticaCupo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Especialidad")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("InasistenciaConsumeCupo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LimiteAnual")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LimiteMensual")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Modalidad")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Plan", "Especialidad", "Modalidad")
+                        .IsUnique();
+
+                    b.ToTable("PoliticasCupo", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Especialidad = "Nutrición",
+                            InasistenciaConsumeCupo = true,
+                            LimiteAnual = 6,
+                            LimiteMensual = 1,
+                            Modalidad = "Presencial",
+                            Plan = "Plan Integral"
+                        });
+                });
+
             modelBuilder.Entity("ConsultasPlan.Models.Profesional", b =>
                 {
                     b.Property<int>("Id")
