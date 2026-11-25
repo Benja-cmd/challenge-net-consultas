@@ -2,7 +2,7 @@
 
 Sistema de gestión de consultas médicas para los afiliados de un plan de salud. Permite registrar afiliados, asignar consultas con profesionales de distintas especialidades y hacer seguimiento del estado de cada consulta.
 
-Incluye la política de **cupo de consultas de nutrición**: 6 consultas presenciales por año calendario, no más de 1 por mes, sin acumulación.
+Incluye **políticas de cupo de consultas por plan**. La configurada por defecto: el *Plan Integral* incluye 6 consultas presenciales de nutrición por año calendario, no más de 1 por mes, sin acumulación.
 
 ## Requisitos
 
@@ -30,6 +30,7 @@ En `backend/appsettings.json`:
 
 | Clave | Descripción | Valor por defecto |
 |---|---|---|
+| `ConnectionStrings:Default` | Cadena de conexión SQLite | `Data Source=consultas.db` |
 | `ZonaHoraria` | Zona horaria en la que se interpretan y validan todas las fechas del sistema | `America/Argentina/Buenos_Aires` |
 
 ### Migraciones
@@ -50,7 +51,10 @@ dotnet ef migrations add <Nombre> -o Data/Migrations
 dotnet test backend/ConsultasPlan.sln
 ```
 
-Los tests (xUnit) están en `tests/ConsultasPlan.Tests` y cubren las reglas de negocio: cupo de nutrición y transiciones de estado de las consultas.
+Los tests (xUnit) están en `tests/ConsultasPlan.Tests`:
+
+- `Reglas/`: tests unitarios de las reglas de negocio (cupo y transiciones de estado).
+- `Integracion/`: levantan la API completa con `WebApplicationFactory`, una base SQLite temporal por test y una fecha fija, y prueban los escenarios del seed de punta a punta, incluida la concurrencia en altas simultáneas.
 
 ---
 
@@ -79,12 +83,15 @@ Pendiente ─┬→ Confirmado ─┬→ Cancelado     (con 24 hs o más de anti
 Cancelado, Atendido e Inasistencia son estados finales.
 ```
 
-**Cupo de nutrición** (aplica a consultas presenciales con profesionales de Nutrición)
+**Cupo de consultas por plan** (tabla `PoliticasCupo`)
 
-- Máximo 6 por año calendario y 1 por mes calendario, según la fecha de la consulta.
-- Consumen cupo las consultas en cualquier estado excepto Cancelado.
+Cada política define plan, especialidad, modalidad, límite anual, límite mensual y si la inasistencia consume cupo. La migración `AgregarPoliticasDeCupo` carga la del challenge: *Plan Integral · Nutrición · Presencial · 6 por año · 1 por mes*.
+
+- Los períodos son año y mes calendario, según la fecha de la consulta.
+- Consumen cupo las consultas en cualquier estado excepto Cancelado (la inasistencia, según la política).
 - Lo no utilizado no se acumula para meses ni años siguientes.
-- Las consultas virtuales no consumen ni están limitadas.
+- Las combinaciones sin política (otra especialidad, modalidad virtual, otro plan) no tienen límite.
+- El alta de consultas se ejecuta en una transacción serializable: altas simultáneas no pueden superar el cupo ni tomar el mismo turno.
 
 ## Endpoints
 
@@ -92,14 +99,14 @@ Cancelado, Atendido e Inasistencia son estados finales.
 |---|---|---|
 | GET | `/consultas` | Lista de consultas |
 | GET | `/consultas/{id}` | Detalle de una consulta |
-| POST | `/consultas` | Agenda una consulta (valida horario, afiliado, cupo de nutrición) |
+| POST | `/consultas` | Agenda una consulta (valida horario, afiliado y cupo del plan) |
 | POST | `/consultas/{id}/cancelacion` | Cancela una consulta |
 | POST | `/consultas/{id}/atencion` | Registra la atención |
 | POST | `/consultas/{id}/inasistencia` | Registra la inasistencia |
 | PUT | `/consultas/{id}/estado` | Cambia el estado aplicando las mismas reglas |
 | GET | `/afiliados` | Lista de afiliados activos |
 | GET | `/afiliados/{id}` | Detalle de un afiliado |
-| GET | `/afiliados/{id}/cupo-nutricion?anio=` | Cupo de nutrición usado y disponible |
+| GET | `/afiliados/{id}/cupo?profesionalId=&modalidad=&anio=` | Cupo aplicable usado y disponible (204 si no aplica ninguno) |
 | POST | `/afiliados` | Alta de afiliado |
 | PUT | `/afiliados/{id}` | Edición de datos de contacto |
 | DELETE | `/afiliados/{id}` | Baja lógica del afiliado |
@@ -117,8 +124,8 @@ Cancelado, Atendido e Inasistencia son estados finales.
 │   ├── Data/          # DbContext, seed, migraciones
 │   ├── Dtos/          # Contratos de entrada/salida
 │   ├── Models/
-│   ├── Reglas/        # Reglas de negocio puras (estados, cupo de nutrición)
-│   └── Servicios/     # Reloj del sistema, cupo de nutrición
+│   ├── Reglas/        # Reglas de negocio puras (estados, cupo)
+│   └── Servicios/     # Reloj del sistema, resolución de cupos por plan
 ├── frontend/    # SPA (Vue 3 · Vite)
-└── tests/       # Tests xUnit de las reglas de negocio
+└── tests/       # Tests xUnit unitarios y de integración
 ```
