@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ConsultasPlan.Data;
@@ -51,6 +52,11 @@ public class ConsultasController : ControllerBase
         if (fechaHora <= _reloj.Ahora)
             return BadRequest(new { mensaje = "No se puede agendar una consulta en una fecha pasada." });
 
+        // Las validaciones de horario y cupo leen y luego escriben: sin serializar, dos altas
+        // simultáneas pueden pasar ambas. En SQLite, Serializable abre la transacción con
+        // BEGIN IMMEDIATE (toma el lock de escritura antes de leer); las demás esperan.
+        await using var transaccion = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
         var afiliado = await _context.Afiliados.FindAsync(request.AfiliadoId);
         if (afiliado == null || !afiliado.isActive)
             return NotFound(new { mensaje = "Afiliado no encontrado." });
@@ -92,6 +98,7 @@ public class ConsultasController : ControllerBase
         };
         _context.Consultas.Add(consulta);
         await _context.SaveChangesAsync();
+        await transaccion.CommitAsync();
         return CreatedAtAction(nameof(GetById), new { id = consulta.Id }, consulta);
     }
 
