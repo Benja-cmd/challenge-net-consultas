@@ -11,7 +11,7 @@ builder.Services.AddSingleton<IReloj>(new Reloj(TimeProvider.System, zonaHoraria
 builder.Services.AddScoped<CupoNutricionServicio>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite("Data Source=consultas.db"));
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=consultas.db"));
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -49,3 +49,6 @@ app.UseSwaggerUI();
 app.UseCors();
 app.MapControllers();
 app.Run();
+
+// Expuesto para los tests de integración (WebApplicationFactory<Program>).
+public partial class Program { }
