@@ -50,10 +50,10 @@ public class AfiliadosController : ControllerBase
         return new CupoNutricionResponse
         {
             Anio = anioConsulta,
-            LimiteAnual = CupoNutricion.LimiteAnual,
-            LimiteMensual = CupoNutricion.LimiteMensual,
+            LimiteAnual = CupoNutricionServicio.PoliticaNutricion.LimiteAnual,
+            LimiteMensual = CupoNutricionServicio.PoliticaNutricion.LimiteMensual,
             Usadas = consumidas.Count,
-            Disponibles = Math.Max(0, CupoNutricion.LimiteAnual - consumidas.Count),
+            Disponibles = Math.Max(0, CupoNutricionServicio.PoliticaNutricion.LimiteAnual - consumidas.Count),
             MesesUtilizados = consumidas.Select(c => c.FechaHora.Month).Distinct().Order().ToList()
         };
     }
