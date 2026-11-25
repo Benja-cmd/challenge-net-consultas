@@ -19,7 +19,8 @@ export const afiliadosApi = {
   create:  (data)      => axios.post(`${BASE_URL}/afiliados`, data),
   update:  (id, data)  => axios.put(`${BASE_URL}/afiliados/${id}`, data),
   delete:  (id)        => axios.delete(`${BASE_URL}/afiliados/${id}`),
-  cupoNutricion: (id, anio) => axios.get(`${BASE_URL}/afiliados/${id}/cupo-nutricion`, { params: { anio } })
+  // 200 con el estado del cupo, o 204 si la combinación no tiene cupo.
+  cupo:    (id, params) => axios.get(`${BASE_URL}/afiliados/${id}/cupo`, { params })
 }
 
 export const profesionalesApi = {
